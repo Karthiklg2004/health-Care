@@ -1,4 +1,6 @@
 {
+  "/api/send-verification/route": "app/api/send-verification/route.js",
   "/doctor/login/page": "app/doctor/login/page.js",
-  "/doctor/dashboard/page": "app/doctor/dashboard/page.js"
+  "/page": "app/page.js",
+  "/doctor/register-patient/page": "app/doctor/register-patient/page.js"
 }

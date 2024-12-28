@@ -26,45 +26,112 @@ export default function RegisterPatientPage() {
     phone: "",
     email: "",
     otp: "",
+    // Additional Information
+    aadhar: "",
+    gender: "",
+    dob: "",
+    address: "",
+    // Medical Device Data
+    TEMPF: "",
+    PULSE: "",
+    RESPR: "",
+    BPSYS: "",
+    BPDIAS: "",
+    POPCT: "",
+    // Medical Conditions
+    Pregnancies: "",
+    Glucose: "",
+    BloodPressure: "",
+    Insulin: "",
+    BMI: "",
+    DiabetesPedigreeFunction: "",
+    Age: "",
+    Smoker: "",
+    Stroke: "",
+    Alcohol: "",
+    // Physical Information
+    Height: "",
+    Weight: "",
+    Bmi: "",
+    BmiClass: "",
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleInitialSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Here you would handle the actual OTP sending
-    // For now, we'll just simulate it with a timeout
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          name: formData.name,
+          phone: formData.phone
+        }),
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        sessionStorage.setItem('patientData', JSON.stringify(formData))
+        setStep(2)
+      } else {
+        alert('Failed to send verification code')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error sending verification code')
+    } finally {
       setIsLoading(false)
-      setStep(2)
-    }, 1500)
+    }
   }
 
   const handleOTPSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Here you would verify the OTP
-    // For now, we'll just simulate it with a timeout
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/send-verification', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          otp: formData.otp,
+          email: formData.email
+        }),
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setStep(3)
+      } else {
+        alert(data.error || 'Invalid OTP')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error verifying OTP')
+    } finally {
       setIsLoading(false)
-      setStep(3)
-    }, 1500)
+    }
   }
 
   const handleFinalSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Here you would handle the final submission
     try {
-      // Simulating an API call
+      // Add your API call here to save all patient data
       await new Promise(resolve => setTimeout(resolve, 1500))
+      sessionStorage.removeItem('patientData')
       router.push("/doctor/dashboard")
     } catch (error) {
       console.error("Registration failed:", error)
+      alert('Registration failed')
     } finally {
       setIsLoading(false)
     }
@@ -160,9 +227,10 @@ export default function RegisterPatientPage() {
 
         {step === 3 && (
           <form onSubmit={handleFinalSubmit} className="space-y-8">
+            {/* Verified Information Display */}
             <Card className="bg-blue-50 shadow-md">
               <CardHeader>
-                <CardTitle className="text-blue-800">Patient Information</CardTitle>
+                <CardTitle className="text-blue-800">Verified Patient Information</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -180,6 +248,7 @@ export default function RegisterPatientPage() {
               </CardContent>
             </Card>
 
+            {/* Additional Information */}
             <Card className="bg-white">
               <CardHeader>
                 <CardTitle className="text-blue-800">Additional Information</CardTitle>
@@ -187,12 +256,22 @@ export default function RegisterPatientPage() {
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="aadhar" className="text-blue-700">Aadhar Number</Label>
-                  <Input id="aadhar" required className="border-blue-300 focus:border-blue-500" />
+                  <Input
+                    id="aadhar"
+                    name="aadhar"
+                    value={formData.aadhar}
+                    onChange={handleInputChange}
+                    required
+                    className="border-blue-300 focus:border-blue-500"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gender" className="text-blue-700">Gender</Label>
-                  <Select>
-                    <SelectTrigger id="gender" className="border-blue-300 focus:border-blue-500">
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) => handleSelectChange('gender', value)}
+                  >
+                    <SelectTrigger className="border-blue-300 focus:border-blue-500">
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -204,15 +283,31 @@ export default function RegisterPatientPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dob" className="text-blue-700">Date of Birth</Label>
-                  <Input id="dob" type="date" required className="border-blue-300 focus:border-blue-500" />
+                  <Input
+                    id="dob"
+                    name="dob"
+                    type="date"
+                    value={formData.dob}
+                    onChange={handleInputChange}
+                    required
+                    className="border-blue-300 focus:border-blue-500"
+                  />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address" className="text-blue-700">Address</Label>
-                  <Textarea id="address" required className="border-blue-300 focus:border-blue-500" />
+                  <Textarea
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    required
+                    className="border-blue-300 focus:border-blue-500"
+                  />
                 </div>
               </CardContent>
             </Card>
 
+            {/* Medical Device Data */}
             <Card className="bg-white">
               <CardHeader>
                 <CardTitle className="text-blue-800">Medical Device Data</CardTitle>
@@ -221,12 +316,21 @@ export default function RegisterPatientPage() {
                 {["TEMPF", "PULSE", "RESPR", "BPSYS", "BPDIAS", "POPCT"].map((field) => (
                   <div key={field} className="space-y-2">
                     <Label htmlFor={field} className="text-blue-700">{field}</Label>
-                    <Input id={field} type="number" step="0.01" className="border-blue-300 focus:border-blue-500" />
+                    <Input
+                      id={field}
+                      name={field}
+                      type="number"
+                      step="0.01"
+                      value={formData[field as keyof typeof formData]}
+                      onChange={handleInputChange}
+                      className="border-blue-300 focus:border-blue-500"
+                    />
                   </div>
                 ))}
               </CardContent>
             </Card>
 
+            {/* Medical Conditions */}
             <Card className="bg-white">
               <CardHeader>
                 <CardTitle className="text-blue-800">Medical Conditions and Practices</CardTitle>
@@ -235,13 +339,24 @@ export default function RegisterPatientPage() {
                 {["Pregnancies", "Glucose", "BloodPressure", "Insulin", "BMI", "DiabetesPedigreeFunction", "Age"].map((field) => (
                   <div key={field} className="space-y-2">
                     <Label htmlFor={field} className="text-blue-700">{field}</Label>
-                    <Input id={field} type="number" step="0.01" className="border-blue-300 focus:border-blue-500" />
+                    <Input
+                      id={field}
+                      name={field}
+                      type="number"
+                      step="0.01"
+                      value={formData[field as keyof typeof formData]}
+                      onChange={handleInputChange}
+                      className="border-blue-300 focus:border-blue-500"
+                    />
                   </div>
                 ))}
                 {["Smoker", "Stroke", "Alcohol"].map((field) => (
                   <div key={field} className="space-y-2">
                     <Label htmlFor={field} className="text-blue-700">{field}</Label>
-                    <Select>
+                    <Select
+                      value={formData[field as keyof typeof formData]}
+                      onValueChange={(value) => handleSelectChange(field, value)}
+                    >
                       <SelectTrigger className="border-blue-300 focus:border-blue-500">
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
@@ -255,6 +370,7 @@ export default function RegisterPatientPage() {
               </CardContent>
             </Card>
 
+            {/* Physical Information */}
             <Card className="bg-white">
               <CardHeader>
                 <CardTitle className="text-blue-800">Physical Information</CardTitle>
@@ -263,7 +379,15 @@ export default function RegisterPatientPage() {
                 {["Height", "Weight", "Bmi", "BmiClass"].map((field) => (
                   <div key={field} className="space-y-2">
                     <Label htmlFor={field} className="text-blue-700">{field}</Label>
-                    <Input id={field} type={field === "BmiClass" ? "text" : "number"} step="0.01" className="border-blue-300 focus:border-blue-500" />
+                    <Input
+                      id={field}
+                      name={field}
+                      type={field === "BmiClass" ? "text" : "number"}
+                      step="0.01"
+                      value={formData[field as keyof typeof formData]}
+                      onChange={handleInputChange}
+                      className="border-blue-300 focus:border-blue-500"
+                    />
                   </div>
                 ))}
               </CardContent>
