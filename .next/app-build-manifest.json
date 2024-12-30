@@ -11,6 +11,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/doctor/register-patient/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/doctor/register-patient/page.js"
+    ],
     "/doctor/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -21,15 +26,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/doctor/dashboard/page.js"
     ],
-    "/doctor/register-patient/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/doctor/register-patient/page.js"
-    ],
     "/api/send-verification/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/send-verification/route.js"
+    ],
+    "/api/classify-data/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/classify-data/route.js"
+    ],
+    "/api/register-patient/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/register-patient/route.js"
     ]
   }
 }

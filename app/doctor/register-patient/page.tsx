@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, FormEvent, ChangeEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Layout } from "@/components/layout"
@@ -28,7 +28,7 @@ export default function RegisterPatientPage() {
     otp: "",
     // Additional Information
     aadhar: "",
-    gender: "",
+    gender: "male",
     dob: "",
     address: "",
     // Medical Device Data
@@ -46,24 +46,33 @@ export default function RegisterPatientPage() {
     BMI: "",
     DiabetesPedigreeFunction: "",
     Age: "",
-    Smoker: "",
-    Stroke: "",
-    Alcohol: "",
+    Smoker: "no",
+    Stroke: "no",
+    Alcohol: "no",
     // Physical Information
     Height: "",
     Weight: "",
     Bmi: "",
-    BmiClass: "",
+    BmiClass: "normal",
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | string, 
+    selectName?: string
+  ) => {
+    if (typeof e === 'string' && selectName) {
+      setFormData(prev => ({
+        ...prev,
+        [selectName]: e
+      }));
+    } else if (typeof e === 'object' && 'target' in e) {
+      const { name, value } = e.target;
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
 
   const handleInitialSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -122,20 +131,47 @@ export default function RegisterPatientPage() {
   }
 
   const handleFinalSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
+
     try {
-      // Add your API call here to save all patient data
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      sessionStorage.removeItem('patientData')
-      router.push("/doctor/dashboard")
+      // First, classify the data
+      const classifyResponse = await fetch('/api/classify-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!classifyResponse.ok) {
+        throw new Error('Classification failed');
+      }
+
+      // Then, register the patient using your existing endpoint
+      const registerResponse = await fetch('/api/register-patient', {  // This matches your existing endpoint
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!registerResponse.ok) {
+        throw new Error('Registration failed');
+      }
+
+      const result = await registerResponse.json();
+
+      if (result.success) {
+        router.push("/doctor/dashboard");
+      } else {
+        throw new Error(result.error || 'Registration failed');
+      }
+
     } catch (error) {
-      console.error("Registration failed:", error)
-      alert('Registration failed')
+      console.error("Error:", error);
+      alert('Registration failed: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Layout>
@@ -162,7 +198,7 @@ export default function RegisterPatientPage() {
                     id="name"
                     name="name"
                     value={formData.name}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -174,7 +210,7 @@ export default function RegisterPatientPage() {
                     name="phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -186,7 +222,7 @@ export default function RegisterPatientPage() {
                     name="email"
                     type="email"
                     value={formData.email}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -212,7 +248,7 @@ export default function RegisterPatientPage() {
                     id="otp"
                     name="otp"
                     value={formData.otp}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -260,7 +296,7 @@ export default function RegisterPatientPage() {
                     id="aadhar"
                     name="aadhar"
                     value={formData.aadhar}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -269,7 +305,7 @@ export default function RegisterPatientPage() {
                   <Label htmlFor="gender" className="text-blue-700">Gender</Label>
                   <Select
                     value={formData.gender}
-                    onValueChange={(value) => handleSelectChange('gender', value)}
+                    onValueChange={(value) => handleChange(value, 'gender')}
                   >
                     <SelectTrigger className="border-blue-300 focus:border-blue-500">
                       <SelectValue placeholder="Select gender" />
@@ -288,7 +324,7 @@ export default function RegisterPatientPage() {
                     name="dob"
                     type="date"
                     value={formData.dob}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -299,7 +335,7 @@ export default function RegisterPatientPage() {
                     id="address"
                     name="address"
                     value={formData.address}
-                    onChange={handleInputChange}
+                    onChange={handleChange}
                     required
                     className="border-blue-300 focus:border-blue-500"
                   />
@@ -322,7 +358,7 @@ export default function RegisterPatientPage() {
                       type="number"
                       step="0.01"
                       value={formData[field as keyof typeof formData]}
-                      onChange={handleInputChange}
+                      onChange={handleChange}
                       className="border-blue-300 focus:border-blue-500"
                     />
                   </div>
@@ -345,7 +381,7 @@ export default function RegisterPatientPage() {
                       type="number"
                       step="0.01"
                       value={formData[field as keyof typeof formData]}
-                      onChange={handleInputChange}
+                      onChange={handleChange}
                       className="border-blue-300 focus:border-blue-500"
                     />
                   </div>
@@ -355,7 +391,7 @@ export default function RegisterPatientPage() {
                     <Label htmlFor={field} className="text-blue-700">{field}</Label>
                     <Select
                       value={formData[field as keyof typeof formData]}
-                      onValueChange={(value) => handleSelectChange(field, value)}
+                      onValueChange={(value) => handleChange(value, field)}
                     >
                       <SelectTrigger className="border-blue-300 focus:border-blue-500">
                         <SelectValue placeholder="Select..." />
@@ -385,7 +421,7 @@ export default function RegisterPatientPage() {
                       type={field === "BmiClass" ? "text" : "number"}
                       step="0.01"
                       value={formData[field as keyof typeof formData]}
-                      onChange={handleInputChange}
+                      onChange={handleChange}
                       className="border-blue-300 focus:border-blue-500"
                     />
                   </div>
