@@ -2,4 +2,6 @@ node_modules
 .env.local
 .next
 # Ignore generated data files
-data/*.csv
+data/*
+__pycache__/
+*.pyc

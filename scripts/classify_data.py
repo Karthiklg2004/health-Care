@@ -81,7 +81,7 @@ def train_privacy_classifier(column_names, privacy_labels):
 
 def classify_healthcare_data(input_data, column_names, predict_privacy_func):
     """
-    Classify input data into private and public categories.
+    Classify input data into private and public categories and upload to IPFS.
     """
     # Add current timestamp
     current_time = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -92,6 +92,9 @@ def classify_healthcare_data(input_data, column_names, predict_privacy_func):
     # Initialize dictionaries for classified data
     private_data = []
     public_data = {}
+    
+    # Add timestamp as a feature-data pair for private data
+    private_data.append(('Created_At', current_time))
     
     # Add timestamp to public data
     public_data['Created_At'] = [current_time]
@@ -110,19 +113,63 @@ def classify_healthcare_data(input_data, column_names, predict_privacy_func):
     private_df = pd.DataFrame(private_data, columns=['Feature', 'Data'])
     public_df = pd.DataFrame(public_data)
     
-    # Add timestamp to private data
-    private_df['Created_At'] = current_time
-    
     # Create data directory if it doesn't exist
     data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
     
     # Save to CSV files with timestamps
     timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
-    private_df.to_csv(os.path.join(data_dir, f'private_data_{timestamp}.csv'), index=False)
-    public_df.to_csv(os.path.join(data_dir, f'public_data_{timestamp}.csv'), index=False)
+    private_file_path = os.path.join(data_dir, f'private_data_{timestamp}.csv')
+    public_file_path = os.path.join(data_dir, f'public_data_{timestamp}.csv')
     
-    return private_df, public_df
+    private_df.to_csv(private_file_path, index=False)
+    public_df.to_csv(public_file_path, index=False)
+    
+    # Upload to IPFS using Node.js script
+    try:
+        from subprocess import run, PIPE
+        
+        def upload_to_ipfs(file_path):
+            print(f"Attempting to upload {file_path} to IPFS...", file=sys.stderr)
+            result = run(['node', os.path.join(os.path.dirname(__file__), '..', 'utils', 'uploadToIPFS.js'), file_path], 
+                        stdout=PIPE, 
+                        stderr=PIPE, 
+                        text=True)
+            
+            print(f"IPFS upload stdout: {result.stdout}", file=sys.stderr)
+            print(f"IPFS upload stderr: {result.stderr}", file=sys.stderr)
+            
+            if result.returncode != 0:
+                print(f"IPFS upload failed with code {result.returncode}", file=sys.stderr)
+                return None
+                
+            try:
+                return json.loads(result.stdout)
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse IPFS response: {e}", file=sys.stderr)
+                return None
+        
+        print("Uploading private file...", file=sys.stderr)
+        private_ipfs = upload_to_ipfs(private_file_path)
+        
+        print("Uploading public file...", file=sys.stderr)
+        public_ipfs = upload_to_ipfs(public_file_path)
+        
+        ipfs_results = {
+            'private': private_ipfs,
+            'public': public_ipfs
+        }
+        
+        # Save IPFS metadata
+        metadata_path = os.path.join(data_dir, f'ipfs_metadata_{timestamp}.json')
+        with open(metadata_path, 'w') as f:
+            json.dump(ipfs_results, f, indent=2)
+            
+        return private_df, public_df, ipfs_results
+        
+    except Exception as e:
+        print(f"Error in IPFS upload: {str(e)}", file=sys.stderr)
+        return private_df, public_df, None
 
 def main():
     try:
@@ -141,7 +188,7 @@ def main():
             debug_mode = True
 
         predict_privacy, encoder, clf = train_privacy_classifier(column_names, privacy_labels)
-        private_data, public_data = classify_healthcare_data(input_data, column_names, predict_privacy)
+        private_data, public_data, ipfs_results = classify_healthcare_data(input_data, column_names, predict_privacy)
         
         # Send debug info to stderr
         if debug_mode:
@@ -149,13 +196,19 @@ def main():
             print(private_data, file=sys.stderr)
             print("\n--- Public Data ---", file=sys.stderr)
             print(public_data, file=sys.stderr)
+            print("\n--- IPFS Results ---", file=sys.stderr)
+            print(ipfs_results, file=sys.stderr)
             print("\nData successfully classified and saved to CSV files.", file=sys.stderr)
         
         # Only print JSON to stdout
-        print(json.dumps({
+        result = {
             'private': private_data.to_dict('records'),
             'public': public_data.to_dict('records')[0]
-        }))
+        }
+        if ipfs_results:
+            result['ipfs'] = ipfs_results
+            
+        print(json.dumps(result))
 
     except Exception as e:
         print(json.dumps({'error': str(e)}))

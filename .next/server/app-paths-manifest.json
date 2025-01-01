@@ -1,7 +1,8 @@
 {
-  "/api/classify-data/route": "app/api/classify-data/route.js",
+  "/api/send-verification/route": "app/api/send-verification/route.js",
   "/api/register-patient/route": "app/api/register-patient/route.js",
-  "/doctor/register-patient/page": "app/doctor/register-patient/page.js",
+  "/api/classify-data/route": "app/api/classify-data/route.js",
   "/doctor/login/page": "app/doctor/login/page.js",
+  "/doctor/register-patient/page": "app/doctor/register-patient/page.js",
   "/doctor/dashboard/page": "app/doctor/dashboard/page.js"
 }
